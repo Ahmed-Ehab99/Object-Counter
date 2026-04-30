@@ -10,7 +10,7 @@ const items = [
 
 export function Sidebar() {
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-16 flex-col items-center border-r border-border/40 bg-surface/40 backdrop-blur-xl pt-20">
+    <aside className="border-border/40 bg-surface/40 fixed top-0 left-0 z-40 flex h-screen w-16 flex-col items-center border-r pt-20 backdrop-blur-xl">
       <nav className="flex flex-col gap-2">
         {items.map(({ to, icon: Icon, label }) => (
           <NavLink to={to} className="relative" key={label}>
@@ -27,7 +27,7 @@ export function Sidebar() {
                     }`}
                   >
                     {isActive && (
-                      <span className="absolute -left-3 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-full bg-neon-cyan shadow-[0_0_12px_var(--neon-cyan)]" />
+                      <span className="bg-neon-cyan absolute top-1/2 -left-3 h-6 w-0.5 -translate-y-1/2 rounded-full shadow-[0_0_12px_var(--neon-cyan)]" />
                     )}
                     <Icon className="h-5 w-5" />
                   </motion.div>

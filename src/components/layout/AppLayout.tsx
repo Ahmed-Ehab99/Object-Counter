@@ -4,10 +4,10 @@ import { Sidebar } from "./Sidebar";
 
 export function AppLayout() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="bg-background text-foreground min-h-screen">
       <Header />
       <Sidebar />
-      <main className="pl-16 pt-16">
+      <main className="pt-16 pl-16">
         <Outlet />
       </main>
     </div>

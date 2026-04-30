@@ -23,7 +23,7 @@ export function StatCard({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative rounded-2xl border border-border/60 bg-card p-5 overflow-hidden"
+      className="border-border/60 bg-card relative overflow-hidden rounded-2xl border p-5"
     >
       <div className="flex items-start justify-between">
         <h3 className={`text-sm font-semibold ${titleColor} max-w-[70%]`}>
@@ -35,8 +35,8 @@ export function StatCard({
         value={Number(value)}
         className="mt-4 text-4xl font-bold tracking-tight text-white"
       />
-      <div className="mt-2 text-xs text-muted-foreground">{subtitle}</div>
-      <div className="mt-5 h-1 rounded-full bg-surface-2 overflow-hidden">
+      <div className="text-muted-foreground mt-2 text-xs">{subtitle}</div>
+      <div className="bg-surface-2 mt-5 h-1 overflow-hidden rounded-full">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: "70%" }}

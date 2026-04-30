@@ -25,11 +25,15 @@ export function MetricBar({
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">{label}</span>
         <span className="font-semibold">
-          <NumberTicker value={value} decimalPlaces={1} className="text-white" />
+          <NumberTicker
+            value={value}
+            decimalPlaces={1}
+            className="text-white"
+          />
           {suffix}
         </span>
       </div>
-      <div className="mt-2 h-1.5 rounded-full bg-surface-2 overflow-hidden">
+      <div className="bg-surface-2 mt-2 h-1.5 overflow-hidden rounded-full">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}

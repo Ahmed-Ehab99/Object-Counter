@@ -5,16 +5,21 @@ export function DonutChart() {
   const total = 100;
   const radius = 60;
   const circumference = 2 * Math.PI * radius;
-
-  let offset = 0;
-  const segments = distribution.map((d) => {
+  const segments = distribution.reduce<
+    ((typeof distribution)[number] & { length: number; offset: number })[]
+  >((acc, d) => {
     const length = (d.value / total) * circumference;
-    const seg = { ...d, length, offset };
-    offset += length;
-    return seg;
-  });
 
-  // We can use shadcn+recharts here to animate and shoe tooltip for each segment, but this for simplicity
+    const offset =
+      acc.length === 0
+        ? 0
+        : acc[acc.length - 1].offset + acc[acc.length - 1].length;
+
+    acc.push({ ...d, length, offset });
+    return acc;
+  }, []);
+
+  // We can use shadcn+recharts here to animate and show tooltip for each segment, but this for simplicity
   return (
     <div className="relative flex items-center justify-center">
       <svg
