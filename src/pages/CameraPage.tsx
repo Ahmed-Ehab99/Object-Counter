@@ -49,6 +49,7 @@ const CameraPage = () => {
         initial={{ opacity: 0, scale: 1.05 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
+        loading="eager"
       />
       <div className="absolute inset-0 bg-linear-to-b from-background/60 via-transparent to-background/80" />
 
