@@ -1,7 +1,11 @@
-import { distribution } from "@/data/mock";
+import type { DistributionItem } from "@/types";
 import { motion } from "framer-motion";
 
-export function DonutChart() {
+export function DonutChart({
+  distribution,
+}: {
+  distribution: DistributionItem[];
+}) {
   const total = 100;
   const radius = 60;
   const circumference = 2 * Math.PI * radius;

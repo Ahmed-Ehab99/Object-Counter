@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { NumberTicker } from "../ui/number-ticker";
+import type { MetricItem, NeonColor } from "@/types";
 
 export function MetricBar({
   label,
@@ -7,13 +8,7 @@ export function MetricBar({
   suffix,
   max = 100,
   color,
-}: {
-  label: string;
-  value: number;
-  suffix: string;
-  max?: number;
-  color: "cyan" | "purple";
-}) {
+}: MetricItem & { color: NeonColor }) {
   const pct = Math.min(100, (value / max) * 100);
   const grad =
     color === "cyan"

@@ -7,14 +7,49 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import { NumberTicker } from "@/components/ui/number-ticker";
-import { distribution, metrics, pastWeek, tabs } from "@/data/mock";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
+import { tabs } from "@/data/mock";
+import { getHistory, getStats } from "@/lib/api";
+import type {
+  DistributionItem,
+  MetricItem,
+  PastWeekItem,
+  StatsSummary,
+} from "@/types";
 import { motion } from "framer-motion";
 import { Camera, CircleCheck, Search, TrendingUp } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import previewDetection from "/preview-detection.png";
 
 const HistoryPage = () => {
   const [activeTab, setActiveTab] = useState("ALL SCANS");
+
+  // Stats state
+  const [summary, setSummary] = useState<StatsSummary | null>(null);
+  const [distribution, setDistribution] = useState<DistributionItem[]>([]);
+  const [metrics, setMetrics] = useState<MetricItem[]>([]);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // History state
+  const [pastWeek, setPastWeek] = useState<PastWeekItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+
+  useEffect(() => {
+    getStats()
+      .then((res) => {
+        setSummary(res.summary);
+        setDistribution(res.distribution);
+        setMetrics(res.metrics);
+      })
+      .catch(console.error)
+      .finally(() => setStatsLoading(false));
+
+    getHistory()
+      .then((res) => setPastWeek(res.pastWeek))
+      .catch(console.error)
+      .finally(() => setHistoryLoading(false));
+  }, []);
 
   return (
     <motion.div
@@ -59,11 +94,11 @@ const HistoryPage = () => {
       <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
         <StatCard
           title="Daily Total Object Counted"
-          value="1284"
+          value={statsLoading ? 0 : (summary?.dailyTotalObjectCounted ?? 0)}
           icon={<TrendingUp className="h-5 w-5" />}
           subtitle={
             <>
-              <span className="text-neon-cyan">↑ 12%</span>{" "}
+              <span className="text-neon-cyan">↑ 12%</span>
               <span className="ml-1">vs yesterday</span>
             </>
           }
@@ -71,13 +106,13 @@ const HistoryPage = () => {
         />
         <StatCard
           title="Daily Total Scans"
-          value="42"
+          value={statsLoading ? 0 : (summary?.dailyTotalScans ?? 0)}
           icon={<Camera className="h-5 w-5" />}
           subtitle={
             <div className="flex items-center gap-1">
               <span className="text-neon-purple flex items-center gap-1 font-semibold">
                 <CircleCheck size={10} /> Optimized
-              </span>{" "}
+              </span>
               <span className="ml-1">Efficiency peak</span>
             </div>
           }
@@ -102,39 +137,54 @@ const HistoryPage = () => {
 
       {/* Distribution + Metrics */}
       <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <div className="border-border/60 bg-card rounded-2xl border p-6">
+        {/* Object Distribution Card */}
+        <div className="border-border/60 bg-card flex flex-col rounded-2xl border p-6 h-62.5">
           <h3 className="font-semibold">Object Distribution</h3>
-          <div className="mt-4 grid grid-cols-2 items-center gap-6">
-            <div className="space-y-3 overflow-hidden">
-              {distribution.map((d) => (
-                <div
-                  key={d.label}
-                  className="flex items-center justify-between overflow-y-auto text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`h-2 w-2 rounded-full ${
-                        d.color === "cyan"
-                          ? "bg-neon-cyan shadow-[0_0_8px_var(--neon-cyan)]"
-                          : "bg-neon-purple shadow-[0_0_8px_var(--neon-purple)]"
-                      }`}
-                    />
-                    <span className="text-muted-foreground">{d.label}</span>
-                  </div>
-                  <span>
-                    <NumberTicker value={d.value} className="text-white" />%
-                  </span>
-                </div>
-              ))}
+
+          {statsLoading ? (
+            <div className="flex flex-1 items-center justify-center">
+              <Spinner className="size-10" />
             </div>
-            <DonutChart />
-          </div>
+          ) : (
+            <div className="mt-4 grid flex-1 grid-cols-2 items-center gap-6">
+              <div className="space-y-3 overflow-hidden">
+                {distribution.map((d) => (
+                  <div
+                    key={d.label}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`h-2 w-2 rounded-full ${d.color === "cyan" ? "bg-neon-cyan shadow-[0_0_8px_var(--neon-cyan)]" : "bg-neon-purple shadow-[0_0_8px_var(--neon-purple)]"}`}
+                      />
+                      <span className="text-muted-foreground">{d.label}</span>
+                    </div>
+                    <span>
+                      <NumberTicker value={d.value} className="text-white" />%
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <DonutChart distribution={distribution} />
+            </div>
+          )}
         </div>
 
-        <div className="border-border/60 bg-card space-y-5 rounded-2xl border p-6">
-          {metrics.map((m) => (
-            <MetricBar key={m.label} {...m} />
-          ))}
+        {/* Metrics Card */}
+        <div className="border-border/60 bg-card flex flex-col rounded-2xl border p-6 h-62.5">
+          <h3 className="mb-4 font-semibold">Metrics</h3>{" "}
+          {/* Added title + margin */}
+          {statsLoading ? (
+            <div className="flex flex-1 items-center justify-center">
+              <Spinner className="size-10" />
+            </div>
+          ) : (
+            <div className="flex-1 space-y-5">
+              {metrics.map((m) => (
+                <MetricBar key={m.label} {...m} color={m.color} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -142,37 +192,65 @@ const HistoryPage = () => {
       <h2 className="text-muted-foreground mt-10 text-sm font-bold tracking-[0.2em]">
         PAST WEEK
       </h2>
-      <Carousel
-        opts={{ dragFree: true, containScroll: "trimSnaps" }}
-        className="mt-4 w-full"
-      >
-        <CarouselContent className="-ml-4 py-4">
-          {pastWeek.map((p) => (
-            <CarouselItem key={p.id} className="basis-[200px] pl-4">
-              <motion.div
-                whileHover={{ y: -4, scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="border-border/60 bg-card hover:border-neon-cyan/50 cursor-grab rounded-2xl border p-3 transition-all hover:shadow-[0_0_24px_color-mix(in_oklab,var(--neon-cyan)_25%,transparent)] active:cursor-grabbing"
-              >
-                <div className="aspect-square overflow-hidden rounded-xl">
-                  <img
-                    src={p.image}
-                    alt={p.title}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
+
+      {historyLoading ? (
+        <div className="scrollbar-hidden mt-4 -ml-4 flex items-center gap-4 overflow-x-auto py-4">
+          {Array.from({ length: 7 }).map((_, index) => (
+            <div key={index} className="shrink-0 basis-[200px] pl-4">
+              <div className="border-border/60 bg-card rounded-2xl border p-3">
+                {/* Image Skeleton */}
+                <div className="bg-surface-2 aspect-square overflow-hidden rounded-xl">
+                  <Skeleton className="h-full w-full rounded-xl" />
                 </div>
-                <div className="mt-3 px-1">
-                  <div className="text-sm font-semibold">{p.title}</div>
-                  <div className="text-muted-foreground mt-0.5 text-xs">
-                    {p.date}
-                  </div>
+
+                {/* Text Content Skeleton */}
+                <div className="mt-3 space-y-2 px-1">
+                  <Skeleton className="h-4 w-[85%]" />
+                  <Skeleton className="h-3 w-[60%]" />
                 </div>
-              </motion.div>
-            </CarouselItem>
+              </div>
+            </div>
           ))}
-        </CarouselContent>
-      </Carousel>
+        </div>
+      ) : (
+        <Carousel
+          opts={{ dragFree: true, containScroll: "trimSnaps" }}
+          className="mt-4 w-full"
+        >
+          <CarouselContent className="-ml-4 py-4">
+            {pastWeek.map((p) => (
+              <CarouselItem key={p.id} className="basis-[200px] pl-4">
+                <motion.div
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="border-border/60 bg-card hover:border-neon-cyan/50 cursor-grab rounded-2xl border p-3 transition-all hover:shadow-[0_0_24px_color-mix(in_oklab,var(--neon-cyan)_25%,transparent)] active:cursor-grabbing"
+                >
+                  <div className="bg-surface-2 aspect-square overflow-hidden rounded-xl">
+                    {p.image ? (
+                      <img
+                        src={p.image}
+                        alt={p.title}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="text-muted-foreground/30 flex h-full w-full items-center justify-center text-xs">
+                        No image
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 px-1">
+                    <div className="text-sm font-semibold">{p.title}</div>
+                    <div className="text-muted-foreground mt-0.5 text-xs">
+                      {p.date}
+                    </div>
+                  </div>
+                </motion.div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
+      )}
     </motion.div>
   );
 };

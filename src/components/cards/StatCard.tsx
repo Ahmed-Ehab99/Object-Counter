@@ -9,7 +9,7 @@ export function StatCard({
   icon,
 }: {
   title: string;
-  value: string;
+  value: number;
   subtitle: React.ReactNode;
   color?: "cyan" | "purple";
   icon?: React.ReactNode;
@@ -32,7 +32,7 @@ export function StatCard({
         {icon && <div className={`${titleColor}`}>{icon}</div>}
       </div>
       <NumberTicker
-        value={Number(value)}
+        value={value}
         className="mt-4 text-4xl font-bold tracking-tight text-white"
       />
       <div className="text-muted-foreground mt-2 text-xs">{subtitle}</div>
