@@ -3,115 +3,44 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { postDetect } from "@/lib/api";
-import type { Detection, DetectResponseData } from "@/types";
+import { useCamera } from "@/hooks/useCamera";
+import { useImageBounds } from "@/hooks/useImageBounds";
 import { AnimatePresence, motion } from "framer-motion";
 import { Camera as CameraIcon, ImageIcon, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-
-type Mode = "idle" | "live" | "captured";
 
 const CameraPage = () => {
-  const [mode, setMode] = useState<Mode>("idle");
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [scanning, setScanning] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<DetectResponseData | null>(null);
+  const {
+    mode,
+    capturedImage,
+    scanning,
+    loading,
+    detections,
+    videoRef,
+    canvasRef,
+    fileRef,
+    handleOpenCamera,
+    handleCapture,
+    handleUpload,
+    handleReset,
+  } = useCamera();
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [imgRef, bounds] = useImageBounds(capturedImage);
 
-  const stopStream = useCallback(() => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-  }, []);
-
-  useEffect(() => () => stopStream(), [stopStream]);
-
-  const runDetection = async (imageBase64: string) => {
-    setScanning(true);
-    setLoading(true);
-    setResult(null);
-    try {
-      const res = await postDetect(imageBase64);
-      setResult(res.data);
-      // Use the annotated image returned by the backend if available
-      if (res.data.image) setCapturedImage(res.data.image);
-      toast.success("Detection complete", {
-        description: `${res.data.detections.length} object(s) found`,
-      });
-    } catch {
-      toast.error("Detection failed", {
-        description: "Could not reach the server. Please try again.",
-      });
-    } finally {
-      setLoading(false);
-      setScanning(false);
+  // Convert a percentage string like "14%" to an absolute px value
+  // relative to where the image is actually rendered inside the container
+  const toAbsolute = (val: string, axis: "x" | "y"): string => {
+    const pct = parseFloat(val) / 100;
+    if (axis === "x") {
+      return `${bounds.offsetX + pct * bounds.renderedWidth}px`;
     }
+    return `${bounds.offsetY + pct * bounds.renderedHeight}px`;
   };
 
-  const handleOpenCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-      setMode("live");
-      setCapturedImage(null);
-      setResult(null);
-    } catch {
-      toast.error("Camera permission denied");
-    }
+  const toSize = (val: string, axis: "x" | "y"): string => {
+    const pct = parseFloat(val) / 100;
+    if (axis === "x") return `${pct * bounds.renderedWidth}px`;
+    return `${pct * bounds.renderedHeight}px`;
   };
-
-  const handleCapture = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d")?.drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-    setCapturedImage(dataUrl);
-    stopStream();
-    setMode("captured");
-    toast.success("Frame captured", { description: "Sending to detector..." });
-    runDetection(dataUrl);
-  };
-
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    stopStream();
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      setCapturedImage(dataUrl);
-      setMode("captured");
-      runDetection(dataUrl);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleReset = () => {
-    stopStream();
-    setCapturedImage(null);
-    setResult(null);
-    setMode("idle");
-    setScanning(false);
-    if (fileRef.current) fileRef.current.value = "";
-    toast("Cleared", { description: "Ready for a new scan" });
-  };
-
-  const detections: Detection[] = result?.detections ?? [];
 
   return (
     <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden bg-black">
@@ -139,19 +68,20 @@ const CameraPage = () => {
         ref={videoRef}
         muted
         playsInline
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
+        className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-500 ${
           mode === "live" ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
 
-      {/* Captured still */}
+      {/* Captured still — ref attached here for bounds calculation */}
       <AnimatePresence>
         {mode === "captured" && capturedImage && (
           <motion.img
+            ref={imgRef}
             key={capturedImage}
             src={capturedImage}
             alt="Captured frame"
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-contain"
             initial={{ opacity: 0, scale: 1.03 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4 }}
@@ -183,9 +113,10 @@ const CameraPage = () => {
         )}
       </AnimatePresence>
 
-      {/* Detection boxes */}
+      {/* Detection boxes — repositioned to match object-contain layout */}
       {mode === "captured" &&
         !loading &&
+        bounds.renderedWidth > 0 &&
         detections.map((d, i) => {
           const colorClass =
             d.color === "cyan" ? "glow-border-cyan" : "glow-border-purple";
@@ -193,6 +124,14 @@ const CameraPage = () => {
             d.color === "cyan"
               ? "bg-neon-cyan text-background"
               : "bg-neon-purple text-background";
+
+          const style = {
+            left: toAbsolute(d.box.left, "x"),
+            top: toAbsolute(d.box.top, "y"),
+            width: toSize(d.box.width, "x"),
+            height: toSize(d.box.height, "y"),
+          };
+
           return (
             <motion.div
               key={d.id}
@@ -200,7 +139,7 @@ const CameraPage = () => {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 + i * 0.15, duration: 0.4 }}
               className={`absolute rounded-sm ${colorClass}`}
-              style={d.box}
+              style={style}
             >
               <div
                 className={`absolute -top-7 left-0 px-2 py-1 text-[10px] font-bold tracking-wider ${labelBg} rounded-sm whitespace-nowrap`}

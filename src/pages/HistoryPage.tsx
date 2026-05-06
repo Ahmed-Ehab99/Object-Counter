@@ -9,47 +9,20 @@ import {
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
-import { tabs } from "@/data/mock";
-import { getHistory, getStats } from "@/lib/api";
-import type {
-  DistributionItem,
-  MetricItem,
-  PastWeekItem,
-  StatsSummary,
-} from "@/types";
+import { useHistory } from "@/hooks/useHistory";
 import { motion } from "framer-motion";
 import { Camera, CircleCheck, Search, TrendingUp } from "lucide-react";
-import { useEffect, useState } from "react";
 import previewDetection from "/preview-detection.png";
 
 const HistoryPage = () => {
-  const [activeTab, setActiveTab] = useState("ALL SCANS");
-
-  // Stats state
-  const [summary, setSummary] = useState<StatsSummary | null>(null);
-  const [distribution, setDistribution] = useState<DistributionItem[]>([]);
-  const [metrics, setMetrics] = useState<MetricItem[]>([]);
-  const [statsLoading, setStatsLoading] = useState(true);
-
-  // History state
-  const [pastWeek, setPastWeek] = useState<PastWeekItem[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(true);
-
-  useEffect(() => {
-    getStats()
-      .then((res) => {
-        setSummary(res.summary);
-        setDistribution(res.distribution);
-        setMetrics(res.metrics);
-      })
-      .catch(console.error)
-      .finally(() => setStatsLoading(false));
-
-    getHistory()
-      .then((res) => setPastWeek(res.pastWeek))
-      .catch(console.error)
-      .finally(() => setHistoryLoading(false));
-  }, []);
+  const {
+    summary,
+    distribution,
+    metrics,
+    statsLoading,
+    pastWeek,
+    historyLoading,
+  } = useHistory();
 
   return (
     <motion.div
@@ -66,26 +39,6 @@ const HistoryPage = () => {
           placeholder="Search previous scans..."
           className="bg-surface-2/70 border-border/60 placeholder:text-muted-foreground focus:border-neon-cyan/60 w-full rounded-2xl border py-3.5 pr-4 pl-11 text-sm transition focus:shadow-[0_0_20px_color-mix(in_oklab,var(--neon-cyan)_25%,transparent)] focus:outline-none"
         />
-      </div>
-
-      {/* Tabs */}
-      <div className="mt-5 flex flex-wrap gap-2">
-        {tabs.map((t) => {
-          const active = activeTab === t;
-          return (
-            <button
-              key={t}
-              onClick={() => setActiveTab(t)}
-              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-bold tracking-wider transition-all ${
-                active
-                  ? "border-neon-cyan text-neon-cyan bg-neon-cyan/5 border shadow-[0_0_16px_color-mix(in_oklab,var(--neon-cyan)_45%,transparent)]"
-                  : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border border"
-              }`}
-            >
-              {t}
-            </button>
-          );
-        })}
       </div>
 
       {/* Daily Summary */}
@@ -138,7 +91,7 @@ const HistoryPage = () => {
       {/* Distribution + Metrics */}
       <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Object Distribution Card */}
-        <div className="border-border/60 bg-card flex flex-col rounded-2xl border p-6 h-62.5">
+        <div className="border-border/60 bg-card flex h-62.5 flex-col rounded-2xl border p-6">
           <h3 className="font-semibold">Object Distribution</h3>
 
           {statsLoading ? (
@@ -171,7 +124,7 @@ const HistoryPage = () => {
         </div>
 
         {/* Metrics Card */}
-        <div className="border-border/60 bg-card flex flex-col rounded-2xl border p-6 h-62.5">
+        <div className="border-border/60 bg-card flex h-62.5 flex-col rounded-2xl border p-6">
           <h3 className="mb-4 font-semibold">Metrics</h3>{" "}
           {/* Added title + margin */}
           {statsLoading ? (

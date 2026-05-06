@@ -68,14 +68,14 @@ export function DonutChart({
             strokeLinecap="round"
             strokeDasharray={`${s.length} ${circumference}`}
             initial={{
-              strokeDashoffset: circumference, // مخفي بالكامل
+              strokeDashoffset: circumference,
             }}
             animate={{
-              strokeDashoffset: -s.offset, // يظهر في مكانه الطبيعي
+              strokeDashoffset: -s.offset,
             }}
             transition={{
               duration: 0.8,
-              delay: i * 0.2, // stagger effect 🔥
+              delay: i * 0.2,
               ease: "easeOut",
             }}
             style={{

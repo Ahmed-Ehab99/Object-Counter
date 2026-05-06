@@ -19,6 +19,7 @@ export function StatCard({
       ? "from-neon-cyan to-neon-cyan/40"
       : "from-neon-purple to-neon-purple/40";
   const titleColor = color === "cyan" ? "text-neon-cyan" : "text-neon-purple";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -31,11 +32,14 @@ export function StatCard({
         </h3>
         {icon && <div className={`${titleColor}`}>{icon}</div>}
       </div>
+
       <NumberTicker
         value={value}
         className="mt-4 text-4xl font-bold tracking-tight text-white"
       />
+
       <div className="text-muted-foreground mt-2 text-xs">{subtitle}</div>
+      
       <div className="bg-surface-2 mt-5 h-1 overflow-hidden rounded-full">
         <motion.div
           initial={{ width: 0 }}
